@@ -5,5 +5,5 @@ uvicorn[standard]==0.30.6
 # Settings
 pydantic-settings==2.5.2
 
-# HTTP (para futuros microservicios)
-httpx==0.27.2
+# WebSockets (para clientes de prueba)
+websockets==12.0

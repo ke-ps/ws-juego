@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from routers import health
+from routers import game, health
 
 app = FastAPI(
     title=settings.app_name,
@@ -24,6 +24,7 @@ app.add_middleware(
 
 # Registrar routers
 app.include_router(health.router)
+app.include_router(game.router)
 
 
 @app.get("/", tags=["root"])
@@ -43,5 +44,5 @@ if __name__ == "__main__":
         "main:app",
         host=settings.host,
         port=settings.port,
-        reload=settings.debug,
+        reload=False,  # Desactivado para evitar cortes durante tests
     )
