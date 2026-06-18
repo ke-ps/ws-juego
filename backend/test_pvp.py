@@ -17,23 +17,22 @@ import sys
 import websockets
 
 
-# ── Excepciones propias ───────────────────────────────────────────────────────
+# ── Excepciones propias ────────────────────────────────────────────────────
 
-
-class TestAssertionError(AssertionError):
+class TestError(AssertionError):
     """Fallo de aserción en el test."""
 
 
 def assert_equal(actual, expected, msg: str):
     if actual != expected:
-        raise TestAssertionError(
+        raise TestError(
             f"{msg}: esperado {expected!r}, obtenido {actual!r}"
         )
 
 
 def assert_in(key, obj: dict, msg: str):
     if key not in obj:
-        raise TestAssertionError(
+        raise TestError(
             f"{msg}: clave '{key}' no encontrada en {obj!r}"
         )
 
@@ -172,13 +171,16 @@ async def pvp_matchmaking_test() -> list[str]:
         print(f"[CHECK] players: {players_c1} OK", flush=True)
 
         # ── C1 envía move, C2 debe recibirlo ──
-        move_payload = {"col": 3, "row": 5}
+        # El servidor calcula la fila automáticamente
+        move_payload = {"col": 3}
         await c1.send({"type": "move", "payload": move_payload})
 
+        # C2 recibe el evento move (actualización de tablero para ambos)
         msg = await c2.recv()
-        assert_equal(msg["type"], "opponent_move", "C2 debe recibir 'opponent_move'")
-        assert_equal(msg["data"], move_payload, "C2 debe recibir el payload exacto de C1")
-        print("[CHECK] Move de C1 llegó a C2 con payload correcto OK", flush=True)
+        assert_equal(msg["type"], "move", "C2 debe recibir 'move'")
+        assert_equal(msg["data"]["col"], 3, "Columna debe ser 3")
+        assert_equal(msg["data"]["player"], "R", "Jugador debe ser R (C1 empieza)")
+        print("[CHECK] Move de C1 llegó a C2 OK", flush=True)
 
         # ── C2 envía chat, C1 debe recibirlo ──
         chat_payload = {"text": "hola rival"}
@@ -196,7 +198,7 @@ async def pvp_matchmaking_test() -> list[str]:
         msg = f"[FAIL] Timeout: {e}"
         print(msg, flush=True)
         return ["FAIL", msg]
-    except TestAssertionError as e:
+    except TestError as e:
         msg = f"[FAIL] {e}"
         print(msg, flush=True)
         return ["FAIL", str(e)]

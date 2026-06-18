@@ -1,5 +1,5 @@
 import unittest
-from src.connect4_game import Connect4Game
+from backend.connect4_game import Connect4Game
 
 class TestConnect4Game(unittest.TestCase):
     def setUp(self):

@@ -7,6 +7,16 @@ from uuid import UUID, uuid4
 from fastapi import WebSocket
 
 from models import GameMode, Session
+from connect4_game import Connect4Game
+
+
+class MoveError(Exception):
+    """Error al procesar un movimiento."""
+
+    def __init__(self, message: str, code: str = "invalid_move"):
+        self.message = message
+        self.code = code
+        super().__init__(self.message)
 
 
 class SessionManager:
@@ -93,6 +103,8 @@ class SessionManager:
         if mode == GameMode.PVE:
             session = self._create_session(mode, client_id)
             self.player_rooms[client_id] = session.id
+            # Inicializar el juego
+            self.init_game(session)
             # Enviar game_start solo al cliente
             await self._notify_player(client_id, {
                 "type": "game_start",
@@ -100,6 +112,8 @@ class SessionManager:
                     "session_id": str(session.id),
                     "mode": "pve",
                     "players": {"player1": client_id, "player2": None},
+                    "board": session.game.board,
+                    "current_player": "R",
                 },
             })
             return session
@@ -114,17 +128,40 @@ class SessionManager:
                 session.full = True
                 self.player_rooms[client_id] = session.id
 
-                # Enviar game_start a AMBOS jugadores
+                # Inicializar el juego cuando ambos jugadores están conectados
+                self.init_game(session)
+
+                # Enviar game_start a AMBOS jugadores con tablero inicial
                 game_start_msg = {
                     "type": "game_start",
                     "data": {
                         "session_id": str(session.id),
                         "mode": "pvp",
                         "players": {"player1": session.player1, "player2": client_id},
+                        "board": session.game.board,
+                        "current_player": "R",  # Rojo siempre empieza
                     },
                 }
                 await self._notify_player(session.player1, game_start_msg)
                 await self._notify_player(client_id, game_start_msg)
+
+                # Notificar el turno al jugador 1 (quien empieza)
+                await self._notify_player(session.player1, {
+                    "type": "turn",
+                    "data": {
+                        "player": session.player1,
+                        "is_current": True,
+                        "player_number": "R",
+                    },
+                })
+                await self._notify_player(session.player2, {
+                    "type": "turn",
+                    "data": {
+                        "player": session.player2,
+                        "is_current": False,
+                        "player_number": "Y",
+                    },
+                })
                 return session
 
         # No hay sala disponible → crear nueva y esperar
@@ -164,6 +201,262 @@ class SessionManager:
         ws = self.active_connections.get(client_id)
         if ws:
             await self._safe_send(ws, message)
+
+    # ── Gestión de partida ────────────────────────────────────────────────────
+
+    def init_game(self, session: Session) -> None:
+        """Inicializa el motor de juego para una sesión."""
+        session.game = Connect4Game()
+        session.is_over = False
+
+    def _validate_column(self, col: int) -> None:
+        """Valida que la columna esté dentro de los límites."""
+        if not (0 <= col < 7):
+            raise MoveError(f"Columna {col} fuera de rango (0-6)", "invalid_column")
+
+    def _validate_not_full(self, session: Session, col: int) -> None:
+        """Valida que la columna no esté llena."""
+        if session.game.board[0][col] != ' ':
+            raise MoveError(f"Columna {col} llena", "column_full")
+
+    def _validate_turn(self, session: Session, client_id: str) -> None:
+        """Valida que sea el turno del jugador."""
+        expected_player = session.game.current_player
+        player_number = session.get_player_number(client_id)
+        if expected_player != player_number:
+            raise MoveError("No es tu turno", "not_your_turn")
+
+    async def handle_move(self, client_id: str, col: int) -> dict:
+        """
+        Procesa un movimiento de un jugador.
+
+        Returns:
+            dict con 'row' y 'col' del movimiento insertado.
+
+        Raises:
+            MoveError si el movimiento es inválido.
+        """
+        # Obtener sesión del jugador
+        session_id = self.player_rooms.get(client_id)
+        if not session_id:
+            raise MoveError("No estás en ninguna partida", "no_session")
+
+        session = self.sessions.get(session_id)
+        if not session:
+            raise MoveError("Sesión no encontrada", "no_session")
+
+        if not session.game:
+            raise MoveError("Partida no inicializada", "game_not_started")
+
+        if session.is_over:
+            raise MoveError("La partida ha terminado", "game_over")
+
+        # Validar movimiento
+        self._validate_column(col)
+        self._validate_not_full(session, col)
+        self._validate_turn(session, client_id)
+
+        # Determinar la fila donde caerá la pieza
+        player_number = session.get_player_number(client_id)
+        row = None
+        for r in range(session.game.rows - 1, -1, -1):
+            if session.game.board[r][col] == ' ':
+                row = r
+                break
+
+        # Insertar pieza
+        session.game.board[row][col] = player_number
+
+        # Preparar respuesta del movimiento
+        move_result = {
+            "row": row,
+            "col": col,
+            "player": player_number,
+        }
+
+        # Verificar victoria
+        if session.game.check_winner():
+            session.is_over = True
+            await self.broadcast_to_session(
+                session.id,
+                {
+                    "type": "game_over",
+                    "data": {
+                        "winner": player_number,
+                        "reason": "win",
+                        "board": session.game.board,
+                    },
+                },
+            )
+            return move_result
+
+        # Verificar empate
+        if session.game.check_tie():
+            session.is_over = True
+            await self.broadcast_to_session(
+                session.id,
+                {
+                    "type": "game_over",
+                    "data": {
+                        "winner": None,
+                        "reason": "tie",
+                        "board": session.game.board,
+                    },
+                },
+            )
+            return move_result
+
+        # Cambiar turno
+        session.game.current_player = 'Y' if session.game.current_player == 'R' else 'R'
+        next_player = session.game.current_player
+
+        # Enviar evento move a AMBOS jugadores (para actualizar sus tableros)
+        # El next_player indica de quién es el turno
+        await self.broadcast_to_session(
+            session.id,
+            {
+                "type": "move",
+                "data": {
+                    **move_result,
+                    "board": session.game.board,
+                    "next_player": next_player,
+                },
+            },
+        )
+
+        return move_result
+
+    async def handle_pve_move(self, client_id: str, col: int) -> dict:
+        """
+        Procesa un movimiento en modo PVE (jugador vs IA).
+        Por ahora, la IA simplemente escoge una columna aleatoria válida.
+        """
+        session_id = self.player_rooms.get(client_id)
+        if not session_id:
+            raise MoveError("No estás en ninguna partida", "no_session")
+
+        session = self.sessions.get(session_id)
+        if not session or not session.game:
+            raise MoveError("Partida no inicializada", "game_not_started")
+
+        if session.is_over:
+            raise MoveError("La partida ha terminado", "game_over")
+
+        # Movimiento del jugador humano
+        self._validate_column(col)
+        self._validate_not_full(session, col)
+        self._validate_turn(session, client_id)
+
+        # El jugador humano siempre es 'R'
+        row = None
+        for r in range(session.game.rows - 1, -1, -1):
+            if session.game.board[r][col] == ' ':
+                row = r
+                break
+
+        session.game.board[row][col] = 'R'
+
+        move_result = {
+            "row": row,
+            "col": col,
+            "player": 'R',
+        }
+
+        # Verificar victoria del jugador
+        if session.game.check_winner():
+            session.is_over = True
+            await self.send_to_player(
+                client_id,
+                {
+                    "type": "game_over",
+                    "data": {
+                        "winner": 'R',
+                        "reason": "win",
+                        "board": session.game.board,
+                    },
+                },
+            )
+            return move_result
+
+        # Verificar empate
+        if session.game.check_tie():
+            session.is_over = True
+            await self.send_to_player(
+                client_id,
+                {
+                    "type": "game_over",
+                    "data": {
+                        "winner": None,
+                        "reason": "tie",
+                        "board": session.game.board,
+                    },
+                },
+            )
+            return move_result
+
+        # Turno de la IA (simple: columna aleatoria válida)
+        import random
+
+        valid_cols = [c for c in range(7) if session.game.board[0][c] == ' ']
+        if not valid_cols:
+            return move_result
+
+        ai_col = random.choice(valid_cols)
+        ai_row = None
+        for r in range(session.game.rows - 1, -1, -1):
+            if session.game.board[r][ai_col] == ' ':
+                ai_row = r
+                break
+
+        session.game.board[ai_row][ai_col] = 'Y'
+
+        # Enviar movimiento de la IA al jugador
+        await self.send_to_player(
+            client_id,
+            {
+                "type": "opponent_move",
+                "data": {
+                    "row": ai_row,
+                    "col": ai_col,
+                    "player": 'Y',
+                    "board": session.game.board,
+                    "next_player": 'R',
+                },
+            },
+        )
+
+        # Verificar victoria de la IA
+        if session.game.check_winner():
+            session.is_over = True
+            await self.send_to_player(
+                client_id,
+                {
+                    "type": "game_over",
+                    "data": {
+                        "winner": 'Y',
+                        "reason": "win",
+                        "board": session.game.board,
+                    },
+                },
+            )
+            return move_result
+
+        # Verificar empate tras movimiento de IA
+        if session.game.check_tie():
+            session.is_over = True
+            await self.send_to_player(
+                client_id,
+                {
+                    "type": "game_over",
+                    "data": {
+                        "winner": None,
+                        "reason": "tie",
+                        "board": session.game.board,
+                    },
+                },
+            )
+
+        return move_result
 
 
 # Instancia global (singleton)
