@@ -1,1 +1,10 @@
-<router-outlet />
+@if (status() === 'in_game') {
+  <app-board [board]="board()" />
+} @else {
+  <app-lobby
+    [status]="status()"
+    [clientId]="clientId()"
+    [sessionId]="sessionId()"
+    [waitingMessage]="waitingMessage()"
+  />
+}
