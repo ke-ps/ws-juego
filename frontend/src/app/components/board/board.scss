@@ -1,0 +1,53 @@
+:host {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.board-container {
+  display: flex;
+  justify-content: center;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #1a3a5c;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.row {
+  display: flex;
+  gap: 4px;
+}
+
+.cell {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f0f0f;
+  border-radius: 50%;
+}
+
+.piece {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: block;
+}
+
+.piece.red {
+  background: #ef4444;
+}
+
+.piece.yellow {
+  background: #fbbf24;
+}
+
+.piece.empty {
+  background: #1a1a2e;
+}

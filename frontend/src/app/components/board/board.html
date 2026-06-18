@@ -1,1 +1,19 @@
-<p>board works!</p>
+<section class="board-container" aria-label="Tablero">
+  <div class="grid" role="grid">
+    @for (row of board(); track $index) {
+      <div class="row" role="row">
+        @for (cell of row; track $index) {
+          <div class="cell" role="gridcell">
+            @if (cell === 'R') {
+              <span class="piece red" aria-label="Ficha roja"></span>
+            } @else if (cell === 'Y') {
+              <span class="piece yellow" aria-label="Ficha amarilla"></span>
+            } @else {
+              <span class="piece empty" aria-label="Vacío"></span>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</section>
