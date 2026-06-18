@@ -1,0 +1,78 @@
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80dvh;
+}
+
+.lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.lobby h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.status-bar {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.status-badge[data-status='connecting'] {
+  background: #444;
+  color: #aaa;
+}
+
+.status-badge[data-status='connected'] {
+  background: #1a4731;
+  color: #4ade80;
+}
+
+.status-badge[data-status='waiting'] {
+  background: #3d2c00;
+  color: #fbbf24;
+}
+
+.info-line {
+  margin: 0;
+}
+
+.info-line code {
+  background: #1a1a1a;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.label {
+  color: #aaa;
+}
+
+.searching {
+  color: #60a5fa;
+  font-style: italic;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.waiting-message {
+  color: #fbbf24;
+  font-weight: 500;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

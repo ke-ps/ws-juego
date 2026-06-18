@@ -1,0 +1,114 @@
+:host {
+display: block;
+font-family: 'Segoe UI', sans-serif;
+background: #0f0f0f;
+color: #e0e0e0;
+min-height: 100dvh;
+padding: 1.5rem;
+box-sizing: border-box;
+}
+
+.debug-panel {
+max-width: 800px;
+margin: 0 auto;
+}
+
+.debug-panel h1 {
+font-size: 1.5rem;
+margin-bottom: 1rem;
+}
+
+.debug-panel h2 {
+font-size: 1rem;
+color: #aaa;
+margin: 1.5rem 0 0.75rem;
+}
+
+.status-bar {
+display: flex;
+gap: 1rem;
+flex-wrap: wrap;
+align-items: center;
+}
+
+.status-badge {
+padding: 0.25rem 0.75rem;
+border-radius: 999px;
+font-weight: 600;
+}
+
+.status-badge[data-status='connecting'] {
+background: #444;
+color: #aaa;
+}
+
+.status-badge[data-status='connected'] {
+background: #1a4731;
+color: #4ade80;
+}
+
+.status-badge[data-status='waiting'] {
+background: #3d2c00;
+color: #fbbf24;
+}
+
+.status-badge[data-status='in_game'] {
+background: #1e3a5f;
+color: #60a5fa;
+}
+
+.meta code {
+background: #1a1a1a;
+padding: 2px 6px;
+border-radius: 4px;
+}
+
+.log-entry {
+background: #1a1a1a;
+border-left: 3px solid #333;
+border-radius: 6px;
+padding: 0.75rem;
+margin-bottom: 0.5rem;
+}
+
+.log-entry[data-type='connected'] {
+border-color: #4ade80;
+}
+
+.log-entry[data-type='waiting'] {
+border-color: #fbbf24;
+}
+
+.log-entry[data-type='game_start'] {
+border-color: #60a5fa;
+}
+
+.log-entry[data-type='turn'] {
+border-color: #a78bfa;
+}
+
+.log-entry[data-type='move'] {
+border-color: #34d399;
+}
+
+.log-entry[data-type='invalid_move'],
+.log-entry[data-type='error'] {
+border-color: #f87171;
+}
+
+.log-entry[data-type='game_over'] {
+border-color: #fb923c;
+}
+
+.log-entry[data-type='chat'] {
+border-color: #94a3b8;
+}
+
+.log-entry[data-type='opponent_disconnected'] {
+border-color: #ef4444;
+}
+
+.log-entry pre {
+white-space: pre-wrap;
+margin: 0;
+}

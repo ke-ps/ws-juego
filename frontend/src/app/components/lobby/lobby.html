@@ -1,1 +1,35 @@
-<p>lobby works!</p>
+<section class="lobby" aria-label="Lobby">
+  <h1>Conecta 4</h1>
+
+  <div class="status-bar" aria-label="Estado de la conexión">
+    <span class="status-badge" [attr.data-status]="status()">
+      @switch (status()) {
+        @case ('connecting') { Conectando... }
+        @case ('connected') { Conectado }
+        @case ('waiting') { En espera }
+      }
+    </span>
+  </div>
+
+  @if (clientId(); as id) {
+    <p class="info-line">
+      <span class="label">client_id:</span>
+      <code>{{ id }}</code>
+    </p>
+  }
+
+  @if (sessionId(); as id) {
+    <p class="info-line">
+      <span class="label">session_id:</span>
+      <code>{{ id }}</code>
+    </p>
+  }
+
+  @if (status() !== 'connecting') {
+    <p class="searching">Buscando rival...</p>
+  }
+
+  @if (waitingMessage(); as msg) {
+    <p class="waiting-message">{{ msg }}</p>
+  }
+</section>

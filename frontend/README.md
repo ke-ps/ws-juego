@@ -1,59 +1,85 @@
-# Frontend
+# WS Juego - Connect 4 WebSocket
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.15.
+Juego multijugador de Conecta 4 desarrollado con:
 
-## Development server
+* Backend: FastAPI
+* Frontend: Angular
+* Comunicación en tiempo real mediante WebSockets
 
-To start a local development server, run:
+## Estructura del proyecto
 
-```bash
+
+ws-juego/
+├── backend/
+├── frontend/
+├── PROJECT_CONTEXT.md
+└── README.md
+
+
+## Requisitos
+
+* Python 3.12+
+* Node.js 22+
+* Angular CLI
+
+## Ejecutar Backend
+
+
+cd backend
+
+pip install -r requirements.txt
+
+uvicorn main:app --reload
+
+
+Backend disponible en:
+
+
+http://localhost:8000
+
+
+## Ejecutar Frontend
+
+cd frontend
+
+npm install
+
 ng serve
-```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Frontend disponible en:
 
-## Code scaffolding
+http://localhost:4200
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Tecnologías
 
-```bash
-ng generate component component-name
-```
+### Backend
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+* FastAPI
+* WebSockets
+* Python
 
-```bash
-ng generate --help
-```
+### Frontend
 
-## Building
+* Angular
+* TypeScript
+* Signals
 
-To build the project run:
+## Estado del proyecto
 
-```bash
-ng build
-```
+### Backend
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+* Sistema de partidas
+* Gestión de turnos
+* WebSockets
+* Validación de movimientos
 
-## Running unit tests
+### Frontend
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+* Conexión WebSocket
+* Tipado de mensajes
+* Interfaz en desarrollo
 
-```bash
-ng test
-```
+## Documentación
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+* `frontend/AGENTS.md` → reglas para asistentes IA
+* `PROJECT_CONTEXT.md` → contexto funcional del proyecto

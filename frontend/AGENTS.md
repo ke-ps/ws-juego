@@ -1,55 +1,119 @@
-
 You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.
 
-## TypeScript Best Practices
+# Project Rules (Highest Priority)
 
-- Use strict type checking
-- Prefer type inference when the type is obvious
-- Avoid the `any` type; use `unknown` when type is uncertain
+* Do not modify backend code.
+* Do not modify the WebSocket protocol.
+* Do not create new API endpoints.
+* Do not introduce state management libraries (NgRx, Akita, NGXS, etc.).
+* Keep the architecture simple and easy to maintain.
+* Modify only files required for the requested task.
+* Do not refactor unrelated code.
+* Do not change the folder structure unless explicitly requested.
+* Preserve existing services, models, types, and components whenever possible.
+* Reuse existing code before creating new files.
+* Do not create duplicate services, components, or models.
+* Do not assume functionality that has not been verified in the codebase.
+* Always indicate which files were modified.
+* Always provide complete files, never partial snippets.
+* If a task affects more than 5 files, first explain the planned changes and wait for confirmation.
+* Implement only one feature per task.
+* Do not implement future phases.
+* Wait for confirmation before continuing to the next phase.
 
-## Angular Best Practices
+# Workflow Rules
 
-- Always use standalone components over NgModules
-- Must NOT set `standalone: true` inside Angular decorators. It's the default in Angular v20+.
-- Use signals for state management
-- Implement lazy loading for feature routes
-- Do NOT use the `@HostBinding` and `@HostListener` decorators. Put host bindings inside the `host` object of the `@Component` or `@Directive` decorator instead
-- Use `NgOptimizedImage` for all static images.
-  - `NgOptimizedImage` does not work for inline base64 images.
+Before writing code:
 
-## Accessibility Requirements
+1. Analyze the existing implementation.
+2. Understand the current architecture.
+3. Reuse existing files whenever possible.
+4. Verify assumptions against the actual codebase.
+5. Minimize changes.
 
-- It MUST pass all AXE checks.
-- It MUST follow all WCAG AA minimums, including focus management, color contrast, and ARIA attributes.
+# TypeScript Best Practices
 
-### Components
+* Use strict type checking.
+* Prefer type inference when the type is obvious.
+* Avoid the `any` type.
+* Use `unknown` when the type is uncertain.
+* Use interfaces and types consistently.
+* Keep functions small and focused.
 
-- Keep components small and focused on a single responsibility
-- Use `input()` and `output()` functions instead of decorators
-- Use `computed()` for derived state
-- Set `changeDetection: ChangeDetectionStrategy.OnPush` in `@Component` decorator
-- Prefer inline templates for small components
-- Prefer Reactive forms instead of Template-driven ones
-- Do NOT use `ngClass`, use `class` bindings instead
-- Do NOT use `ngStyle`, use `style` bindings instead
-- When using external templates/styles, use paths relative to the component TS file.
+# Angular Best Practices
 
-## State Management
+* Use standalone components.
+* Use Signals for local state management.
+* Use `computed()` for derived state.
+* Use lazy loading for feature routes when appropriate.
+* Use `inject()` instead of constructor injection.
+* Use `ChangeDetectionStrategy.OnPush`.
+* Do not use `@HostBinding` or `@HostListener`; use the `host` property instead.
+* Use `NgOptimizedImage` for static images.
+* Keep components focused on a single responsibility.
 
-- Use signals for local component state
-- Use `computed()` for derived state
-- Keep state transformations pure and predictable
-- Do NOT use `mutate` on signals, use `update` or `set` instead
+# Components
 
-## Templates
+* Use `input()` and `output()` functions instead of decorators when possible.
+* Prefer inline templates only for very small components.
+* Use external templates and styles for larger components.
+* Keep component logic simple.
+* Do not place business logic inside templates.
+* Use relative paths for templateUrl and styleUrl.
 
-- Keep templates simple and avoid complex logic
-- Use native control flow (`@if`, `@for`, `@switch`) instead of `*ngIf`, `*ngFor`, `*ngSwitch`
-- Use the async pipe to handle observables
-- Do not assume globals like (`new Date()`) are available.
+# State Management
 
-## Services
+* Use Signals for local state.
+* Use `computed()` for derived state.
+* Keep state transformations pure and predictable.
+* Do not use `mutate()` on signals.
+* Use `set()` or `update()` instead.
 
-- Design services around a single responsibility
-- Use the `providedIn: 'root'` option for singleton services
-- Use the `inject()` function instead of constructor injection
+# Templates
+
+* Keep templates simple.
+* Use Angular control flow:
+
+  * `@if`
+  * `@for`
+  * `@switch`
+* Avoid complex template expressions.
+* Use the async pipe when consuming observables.
+* Do not assume browser globals inside templates.
+
+# Forms
+
+* Prefer Reactive Forms.
+* Avoid Template-Driven Forms unless explicitly required.
+
+# Styling
+
+* Keep styles component-scoped.
+* Avoid unnecessary complexity.
+* Prefer maintainable CSS/SCSS.
+
+# Services
+
+* Services must have a single responsibility.
+* Use `providedIn: 'root'` for singleton services.
+* Use `inject()` instead of constructor injection.
+* Keep services focused on business logic and communication layers.
+
+# Accessibility Requirements
+
+* Code must pass AXE checks.
+* Follow WCAG AA requirements.
+* Ensure proper focus management.
+* Maintain sufficient color contrast.
+* Use semantic HTML whenever possible.
+* Add ARIA attributes only when necessary.
+
+# Output Requirements
+
+When completing a task:
+
+1. Explain briefly what was implemented.
+2. List all modified files.
+3. Provide complete file contents.
+4. Do not output incomplete code.
+5. Do not modify unrelated functionality.
