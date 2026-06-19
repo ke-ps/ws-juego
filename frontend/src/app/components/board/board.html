@@ -1,5 +1,5 @@
 <section class="board-wrapper" aria-label="Tablero">
-  <div class="turn-indicator">
+  <div class="turn-indicator" aria-live="polite">
     @if (winner() !== undefined) {
       @if (winner() === null) {
         <span class="turn-text tie">Empate</span>
@@ -17,7 +17,7 @@
 
   <div class="board-container">
     @if (winner() !== undefined) {
-      <div class="overlay">
+      <div class="overlay" aria-live="assertive">
         <button class="restart-btn" (click)="restart.emit()">Volver al lobby</button>
       </div>
     }

@@ -1,7 +1,7 @@
 @if (errorMessage(); as msg) {
   <div class="notification error" role="alert">
     <span>{{ msg }}</span>
-    <button class="dismiss-btn" (click)="onDismissError()">&times;</button>
+    <button class="dismiss-btn" (click)="onDismissError()" aria-label="Cerrar">&times;</button>
   </div>
 }
 

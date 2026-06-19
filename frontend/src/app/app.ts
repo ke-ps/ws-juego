@@ -121,6 +121,7 @@ export class App {
         this.winner.set(msg.data.winner);
         break;
 
+      case 'invalid_move':
       case 'error':
         this.errorMessage.set(msg.data.message);
         break;
