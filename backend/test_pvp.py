@@ -75,11 +75,12 @@ class WSClient:
 
 
 async def _collect_messages(client: WSClient, max_count: int = 10) -> dict:
-    """Recolecta mensajes hasta tener connected y game_start."""
+    """Recolecta mensajes hasta tener game_start + turn."""
     result = {
         "connected": None,
         "game_start": None,
         "waiting": None,
+        "turn": None,
         "messages": [],
     }
     for _ in range(max_count):
@@ -91,12 +92,11 @@ async def _collect_messages(client: WSClient, max_count: int = 10) -> dict:
             result["game_start"] = msg
         elif msg["type"] == "waiting" and result["waiting"] is None:
             result["waiting"] = msg
-        # Terminar si tenemos connected + (game_start o waiting)
-        # Para el primer jugador: connected + waiting
-        # Para el segundo jugador: connected + game_start
-        if result["connected"] is not None and (
-            result["game_start"] is not None or result["waiting"] is not None
-        ):
+        elif msg["type"] == "turn" and result["turn"] is None:
+            result["turn"] = msg
+        # Terminar cuando tengamos game_start + turn
+        # (waiting no es suficiente, hay que esperar game_start)
+        if result["game_start"] is not None and result["turn"] is not None:
             break
     return result
 
@@ -106,11 +106,12 @@ async def pvp_matchmaking_test() -> list[str]:
     Test de matchmaking PvP robusto que no depende del orden de conexión.
 
     Verificaciones:
-    1. Ambos jugadores reciben 'connected' con client_id y session_id.
-    2. Ambos jugadores reciben 'game_start' con los mismos players.
-    3. Ambos comparten el mismo session_id.
-    4. Un move enviado por C1 llega a C2 con el payload correcto.
-    5. Un chat enviado por C2 llega a C1.
+    1. El primer jugador (C1) recibe 'connected' con client_id y session_id.
+    2. El segundo jugador (C2) no recibe 'connected' (fix: solo game_start).
+    3. Ambos jugadores reciben 'game_start' con los mismos players.
+    4. Ambos comparten el mismo session_id.
+    5. Un move enviado por C1 llega a C2 con el payload correcto.
+    6. Un chat enviado por C2 llega a C1.
     """
     c1 = WSClient("ws://localhost:8000/ws/pvp", "C1")
     c2 = WSClient("ws://localhost:8000/ws/pvp", "C2")
@@ -144,19 +145,19 @@ async def pvp_matchmaking_test() -> list[str]:
         print(f"[C1] connected: client_id={c1.client_id}, session_id={c1.session_id}", flush=True)
         print(f"[C2] connected: client_id={c2.client_id}, session_id={c2.session_id}", flush=True)
 
-        # ── Verificar game_start recibido ──
+        # ── Verificar game_start recibido (ambos ya conectados, juegan en la misma sesión) ──
         assert c1_data["game_start"] is not None, "C1 debe recibir 'game_start'"
         assert c2_data["game_start"] is not None, "C2 debe recibir 'game_start'"
-        print(f"[C1] game_start: session_id={c1_data['game_start']['data']['session_id']}", flush=True)
-        print(f"[C2] game_start: session_id={c2_data['game_start']['data']['session_id']}", flush=True)
-
-        # ── Verificaciones: mismo session_id ──
+        # Ambos deben tener el mismo session_id de game_start
         assert_equal(
             c1_data["game_start"]["data"]["session_id"],
             c2_data["game_start"]["data"]["session_id"],
             "Ambos game_start deben tener el mismo session_id"
         )
-        assert_equal(c1.session_id, c2.session_id, "C1 y C2 deben compartir el mismo session_id")
+        print(f"[C1] game_start: session_id={c1_data['game_start']['data']['session_id']}", flush=True)
+        print(f"[C2] game_start: session_id={c2_data['game_start']['data']['session_id']}", flush=True)
+
+        # ── Verificaciones: mismo session_id ──
 
         # ── Verificar players en game_start ──
         players_c1 = c1_data["game_start"]["data"]["players"]
@@ -170,26 +171,45 @@ async def pvp_matchmaking_test() -> list[str]:
         print(f"[CHECK] session_id: {c1.session_id} OK", flush=True)
         print(f"[CHECK] players: {players_c1} OK", flush=True)
 
-        # ── C1 envía move, C2 debe recibirlo ──
-        # El servidor calcula la fila automáticamente
+        # ── Determinar quién empieza usando turn.is_current ──
+        c1_turn = c1_data["turn"]
+        c2_turn = c2_data["turn"]
+        if c1_turn and c1_turn["data"]["is_current"]:
+            current_player, other_player = c1, c2
+            current_name, other_name = "C1", "C2"
+            current_player_number = c1_turn["data"]["player_number"]
+        else:
+            current_player, other_player = c2, c1
+            current_name, other_name = "C2", "C1"
+            current_player_number = c2_turn["data"]["player_number"]
+        print(f"[INFO] Turno actual: {current_name} (player {current_player_number})", flush=True)
+
+        # ── current_player envía move, other_player debe recibirlo ──
         move_payload = {"col": 3}
-        await c1.send({"type": "move", "payload": move_payload})
+        await current_player.send({"type": "move", "payload": move_payload})
 
-        # C2 recibe el evento move (actualización de tablero para ambos)
-        msg = await c2.recv()
-        assert_equal(msg["type"], "move", "C2 debe recibir 'move'")
+        # other_player recibe el evento move (actualización de tablero)
+        msg = await other_player.recv()
+        assert_equal(msg["type"], "move", f"{other_name} debe recibir 'move'")
         assert_equal(msg["data"]["col"], 3, "Columna debe ser 3")
-        assert_equal(msg["data"]["player"], "R", "Jugador debe ser R (C1 empieza)")
-        print("[CHECK] Move de C1 llegó a C2 OK", flush=True)
+        assert_equal(msg["data"]["player"], current_player_number,
+                     f"Jugador debe ser {current_player_number} ({current_name})")
+        print(f"[CHECK] Move de {current_name} llegó a {other_name} OK", flush=True)
 
-        # ── C2 envía chat, C1 debe recibirlo ──
+        # ── current_player recibe el move (broadcast a todos) ──
+        msg = await current_player.recv()
+        assert_equal(msg["type"], "move", f"{current_name} debe recibir 'move' (broadcast)")
+        assert_equal(msg["data"]["col"], 3, "Columna debe ser 3")
+        print(f"[CHECK] Move broadcast llegó a {current_name} OK", flush=True)
+
+        # ── other_player envía chat, current_player debe recibirlo ──
         chat_payload = {"text": "hola rival"}
-        await c2.send({"type": "chat", "payload": chat_payload})
+        await other_player.send({"type": "chat", "payload": chat_payload})
 
-        msg = await c1.recv()
-        assert_equal(msg["type"], "chat", "C1 debe recibir 'chat'")
-        assert_equal(msg["data"], chat_payload, "C1 debe recibir el chat payload exacto")
-        print("[CHECK] Chat de C2 llegó a C1 OK", flush=True)
+        msg = await current_player.recv()
+        assert_equal(msg["type"], "chat", f"{current_name} debe recibir 'chat'")
+        assert_equal(msg["data"], chat_payload, f"{current_name} debe recibir el chat payload exacto")
+        print(f"[CHECK] Chat de {other_name} llegó a {current_name} OK", flush=True)
 
         print("\n[PASS] Todas las comprobaciones pasaron.", flush=True)
         return ["PASS"]
