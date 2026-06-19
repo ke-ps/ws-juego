@@ -2,12 +2,16 @@
 Gestor de sesiones/rooms y conexiones WebSocket.
 """
 import json
+import logging
 from uuid import UUID, uuid4
 
 from fastapi import WebSocket
 
 from models import GameMode, Session
 from connect4_game import Connect4Game
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class MoveError(Exception):
@@ -256,33 +260,50 @@ class SessionManager:
         """Valida que sea el turno del jugador."""
         expected_player = session.game.current_player
         player_number = session.get_player_number(client_id)
+        logger.info(
+            "[TURN_CHECK] session=%s client=%s expected=%s actual=%s room_id=%s",
+            session.id, client_id[:8], expected_player, player_number,
+            session.id,
+        )
         if expected_player != player_number:
+            logger.warning(
+                "[TURN_REJECT] session=%s client=%s expected=%s actual=%s",
+                session.id, client_id[:8], expected_player, player_number,
+            )
             raise MoveError("No es tu turno", "not_your_turn")
 
     async def handle_move(self, client_id: str, col: int) -> dict:
         """
         Procesa un movimiento de un jugador.
-
-        Returns:
-            dict con 'row' y 'col' del movimiento insertado.
-
-        Raises:
-            MoveError si el movimiento es inválido.
         """
         # Obtener sesión del jugador
         session_id = self.player_rooms.get(client_id)
         if not session_id:
+            logger.warning("[MOVE_REJECT] client=%s reason=no_session", client_id[:8])
             raise MoveError("No estás en ninguna partida", "no_session")
 
         session = self.sessions.get(session_id)
         if not session:
+            logger.warning("[MOVE_REJECT] session=%s reason=not_found", session_id)
             raise MoveError("Sesión no encontrada", "no_session")
 
         if not session.game:
+            logger.warning("[MOVE_REJECT] session=%s reason=game_not_started", session.id)
             raise MoveError("Partida no inicializada", "game_not_started")
 
         if session.is_over:
+            logger.warning("[MOVE_REJECT] session=%s reason=game_over", session.id)
             raise MoveError("La partida ha terminado", "game_over")
+
+        # Log pre-move state
+        player_number = session.get_player_number(client_id)
+        logger.info(
+            "[MOVE_BEFORE] session=%s room=%s client=%s player=%s col=%d current_player=%s p1=%s p2=%s",
+            session.id, session_id, client_id[:8], player_number, col,
+            session.game.current_player,
+            session.player1[:8] if session.player1 else None,
+            session.player2[:8] if session.player2 else None,
+        )
 
         # Validar movimiento
         self._validate_column(col)
@@ -290,7 +311,6 @@ class SessionManager:
         self._validate_turn(session, client_id)
 
         # Determinar la fila donde caerá la pieza
-        player_number = session.get_player_number(client_id)
         row = None
         for r in range(session.game.rows - 1, -1, -1):
             if session.game.board[r][col] == ' ':
@@ -310,6 +330,10 @@ class SessionManager:
         # Verificar victoria
         if session.game.check_winner():
             session.is_over = True
+            logger.info(
+                "[MOVE_WIN] session=%s winner=%s player=%s col=%d row=%d",
+                session.id, player_number, client_id[:8], col, row,
+            )
             await self.broadcast_to_session(
                 session.id,
                 {
@@ -326,6 +350,7 @@ class SessionManager:
         # Verificar empate
         if session.game.check_tie():
             session.is_over = True
+            logger.info("[MOVE_TIE] session=%s", session.id)
             await self.broadcast_to_session(
                 session.id,
                 {
@@ -340,11 +365,15 @@ class SessionManager:
             return move_result
 
         # Cambiar turno
+        old_player = session.game.current_player
         session.game.current_player = 'Y' if session.game.current_player == 'R' else 'R'
         next_player = session.game.current_player
+        logger.info(
+            "[MOVE_AFTER] session=%s client=%s col=%d turn_switch: %s -> %s",
+            session.id, client_id[:8], col, old_player, next_player,
+        )
 
         # Enviar evento move a AMBOS jugadores (para actualizar sus tableros)
-        # El next_player indica de quién es el turno
         await self.broadcast_to_session(
             session.id,
             {
@@ -355,6 +384,34 @@ class SessionManager:
                     "next_player": next_player,
                 },
             },
+        )
+
+        # Enviar turno a cada jugador individualmente
+        # El frontend solo actualiza isMyTurn con mensajes type "turn"
+        is_r_turn = (next_player == 'R')
+        await self._notify_player(session.player1, {
+            "type": "turn",
+            "data": {
+                "player": session.player1,
+                "is_current": is_r_turn,
+                "player_number": "R",
+            },
+        })
+        logger.info(
+            "[TURN_SENT] session=%s to=%s (player1, R) is_current=%s",
+            session.id, session.player1[:8] if session.player1 else None, is_r_turn,
+        )
+        await self._notify_player(session.player2, {
+            "type": "turn",
+            "data": {
+                "player": session.player2,
+                "is_current": not is_r_turn,
+                "player_number": "Y",
+            },
+        })
+        logger.info(
+            "[TURN_SENT] session=%s to=%s (player2, Y) is_current=%s",
+            session.id, session.player2[:8] if session.player2 else None, not is_r_turn,
         )
 
         return move_result

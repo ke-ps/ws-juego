@@ -10,7 +10,11 @@ from models import GameMode
 from session_manager import session_manager, MoveError
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
+    force=True,
+)
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["game"])
@@ -51,8 +55,6 @@ async def websocket_endpoint(
     session = await session_manager.join_or_create(websocket, client_id, game_mode)
     print(f"[WS] Cliente {client_id} joined session {session.id}")
 
-    # Nota: 'connected' se envía dentro de join_or_create para garantizar
-    # que llegue ANTES de waiting/game_start.
     # Bucle de mensajes
     try:
         while True:
@@ -67,36 +69,43 @@ async def websocket_endpoint(
                 continue
 
             msg_type = msg.get("type", "unknown")
+            logger.info("[WS_MSG] client=%s type=%s session=%s", client_id[:8], msg_type, session.id)
 
             if msg_type == "move":
-                # Extraer columna del payload
                 payload = msg.get("payload", {})
                 col = payload.get("col")
+                logger.info(
+                    "[MOVE_RECV] client=%s session=%s col=%s",
+                    client_id[:8], session.id, col,
+                )
 
                 if col is None:
+                    logger.warning("[MOVE_REJECT] client=%s reason=missing_col", client_id[:8])
                     await session_manager.send_to_player(client_id, {
                         "type": "invalid_move",
                         "data": {"message": "Falta el campo 'col' en el payload"},
                     })
                     continue
 
-                # Verificar que col sea un número entero válido
                 if not isinstance(col, int) or not (0 <= col < 7):
+                    logger.warning("[MOVE_REJECT] client=%s col=%s reason=invalid_col", client_id[:8], col)
                     await session_manager.send_to_player(client_id, {
                         "type": "invalid_move",
                         "data": {"message": "Columna debe ser un entero entre 0 y 6"},
                     })
                     continue
 
-                # Procesar movimiento según el modo de juego
                 try:
                     if session.mode == GameMode.PVE:
-                        # En PVE, el servidor maneja tanto el movimiento del jugador como el de la IA
                         await session_manager.handle_pve_move(client_id, col)
                     else:
-                        # En PvP, procesar el movimiento normal
                         await session_manager.handle_move(client_id, col)
+                    logger.info("[MOVE_ACCEPTED] client=%s session=%s col=%d", client_id[:8], session.id, col)
                 except MoveError as e:
+                    logger.warning(
+                        "[MOVE_REJECT] client=%s session=%s col=%d reason=%s code=%s",
+                        client_id[:8], session.id, col, e.message, e.code,
+                    )
                     await session_manager.send_to_player(client_id, {
                         "type": "invalid_move",
                         "data": {"message": e.message, "code": e.code},
