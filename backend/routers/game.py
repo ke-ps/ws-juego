@@ -51,23 +51,8 @@ async def websocket_endpoint(
     session = await session_manager.join_or_create(websocket, client_id, game_mode)
     print(f"[WS] Cliente {client_id} joined session {session.id}")
 
-    # Enviar confirmación de conexión al cliente
-    connected_data = {
-        "client_id": client_id,
-        "session_id": str(session.id),
-        "mode": session.mode.value,
-    }
-
-    # Incluir tablero inicial para modos donde el juego ya empezó
-    if session.game:
-        connected_data["board"] = session.game.board
-        connected_data["current_player"] = session.game.current_player
-
-    await session_manager.send_to_player(client_id, {
-        "type": "connected",
-        "data": connected_data,
-    })
-
+    # Nota: 'connected' se envía dentro de join_or_create para garantizar
+    # que llegue ANTES de waiting/game_start.
     # Bucle de mensajes
     try:
         while True:

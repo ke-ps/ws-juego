@@ -1,0 +1,2 @@
+FAIL
+[FAIL] AssertionError: C1 debe recibir 'connected'

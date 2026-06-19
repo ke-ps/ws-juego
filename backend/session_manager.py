@@ -98,11 +98,23 @@ class SessionManager:
         Lógica de matchmaking:
         - PvP: busca sala esperando, o crea una nueva.
         - PvE: crea sala directamente (jugador solo).
+
+        Envía 'connected' a cada jugador ANTES de waiting/game_start
+        para garantizar el orden correcto de mensajes.
         """
         # Caso PVE: crear sala directamente
         if mode == GameMode.PVE:
             session = self._create_session(mode, client_id)
             self.player_rooms[client_id] = session.id
+            # Enviar connected antes que game_start
+            await self._notify_player(client_id, {
+                "type": "connected",
+                "data": {
+                    "client_id": client_id,
+                    "session_id": str(session.id),
+                    "mode": "pve",
+                },
+            })
             # Inicializar el juego
             self.init_game(session)
             # Enviar game_start solo al cliente
@@ -127,6 +139,17 @@ class SessionManager:
                 session.player2 = client_id
                 session.full = True
                 self.player_rooms[client_id] = session.id
+
+                # Enviar connected solo al nuevo jugador (player2)
+                # player1 ya recibió connected cuando creó la sala
+                await self._notify_player(client_id, {
+                    "type": "connected",
+                    "data": {
+                        "client_id": client_id,
+                        "session_id": str(session.id),
+                        "mode": "pvp",
+                    },
+                })
 
                 # Inicializar el juego cuando ambos jugadores están conectados
                 self.init_game(session)
@@ -168,6 +191,16 @@ class SessionManager:
         session = self._create_session(mode, client_id)
         self.player_rooms[client_id] = session.id
         self.waiting_rooms.append(session.id)
+
+        # Enviar connected antes que waiting
+        await self._notify_player(client_id, {
+            "type": "connected",
+            "data": {
+                "client_id": client_id,
+                "session_id": str(session.id),
+                "mode": "pvp",
+            },
+        })
 
         # Enviar waiting solo al cliente que crea la sala
         await self._notify_player(client_id, {
