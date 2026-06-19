@@ -37,9 +37,22 @@ export class App {
   protected readonly waitingMessage = signal<string | null>(null);
   protected readonly board = signal<string[][]>(emptyBoard());
   protected readonly isMyTurn = signal(false);
+  protected readonly winner = signal<'R' | 'Y' | null | undefined>(undefined);
 
   protected onColumnSelected(col: number): void {
     this.ws.send({ type: 'move', payload: { col } });
+  }
+
+  protected onRestart(): void {
+    this.ws.disconnect();
+    this.status.set('connecting');
+    this.clientId.set(null);
+    this.sessionId.set(null);
+    this.waitingMessage.set(null);
+    this.board.set(emptyBoard());
+    this.isMyTurn.set(false);
+    this.winner.set(undefined);
+    this.ws.connect();
   }
 
   constructor() {
@@ -86,6 +99,7 @@ export class App {
       case 'game_over':
         this.board.set(msg.data.board);
         this.isMyTurn.set(false);
+        this.winner.set(msg.data.winner);
         break;
     }
   }

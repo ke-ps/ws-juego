@@ -1,5 +1,5 @@
 @if (status() === 'in_game') {
-  <app-board [board]="board()" [disabled]="!isMyTurn()" (columnSelected)="onColumnSelected($event)" />
+  <app-board [board]="board()" [disabled]="!isMyTurn()" [winner]="winner()" (columnSelected)="onColumnSelected($event)" (restart)="onRestart()" />
 } @else {
   <app-lobby
     [status]="status()"

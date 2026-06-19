@@ -11,7 +11,9 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 export class Board {
   readonly board = input<string[][]>([]);
   readonly disabled = input(false);
+  readonly winner = input<'R' | 'Y' | null | undefined>(undefined);
   readonly columnSelected = output<number>();
+  readonly restart = output<void>();
 
   protected selectColumn(col: number): void {
     if (this.disabled()) return;

@@ -1,11 +1,25 @@
 <section class="board-container" aria-label="Tablero">
   <div class="turn-indicator">
-    @if (disabled()) {
+    @if (winner() !== undefined) {
+      @if (winner() === null) {
+        <span class="turn-text tie">Empate</span>
+      } @else if (winner() === 'R') {
+        <span class="turn-text winner-red">Ganador: Rojo</span>
+      } @else {
+        <span class="turn-text winner-yellow">Ganador: Amarillo</span>
+      }
+    } @else if (disabled()) {
       <span class="turn-text opponent">Turno del oponente</span>
     } @else {
       <span class="turn-text mine">Tu turno</span>
     }
   </div>
+
+  @if (winner() !== undefined) {
+    <div class="overlay">
+      <button class="restart-btn" (click)="restart.emit()">Volver al lobby</button>
+    </div>
+  }
 
   <div class="grid" role="grid" [class.disabled]="disabled()">
     @for (row of board(); track $index) {
