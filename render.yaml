@@ -34,8 +34,6 @@ services:
   - type: web
     name: connect4-frontend
     env: static
-    region: ohio
-    plan: free
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: frontend/dist/frontend/browser
     headers:
