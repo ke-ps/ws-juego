@@ -1,4 +1,4 @@
-<section class="board-container" aria-label="Tablero">
+<section class="board-wrapper" aria-label="Tablero">
   <div class="turn-indicator">
     @if (winner() !== undefined) {
       @if (winner() === null) {
@@ -15,27 +15,29 @@
     }
   </div>
 
-  @if (winner() !== undefined) {
-    <div class="overlay">
-      <button class="restart-btn" (click)="restart.emit()">Volver al lobby</button>
-    </div>
-  }
-
-  <div class="grid" role="grid" [class.disabled]="disabled()">
-    @for (row of board(); track $index) {
-      <div class="row" role="row">
-        @for (cell of row; track $index) {
-          <div class="cell" role="gridcell" (click)="selectColumn($index)">
-            @if (cell === 'R') {
-              <span class="piece red" aria-label="Ficha roja"></span>
-            } @else if (cell === 'Y') {
-              <span class="piece yellow" aria-label="Ficha amarilla"></span>
-            } @else {
-              <span class="piece empty" aria-label="Vacío"></span>
-            }
-          </div>
-        }
+  <div class="board-container">
+    @if (winner() !== undefined) {
+      <div class="overlay">
+        <button class="restart-btn" (click)="restart.emit()">Volver al lobby</button>
       </div>
     }
+
+    <div class="grid" role="grid" [class.disabled]="disabled()">
+      @for (row of board(); track $index) {
+        <div class="row" role="row">
+          @for (cell of row; track $index) {
+            <div class="cell" role="gridcell" (click)="selectColumn($index)">
+              @if (cell === 'R') {
+                <span class="piece red" aria-label="Ficha roja"></span>
+              } @else if (cell === 'Y') {
+                <span class="piece yellow" aria-label="Ficha amarilla"></span>
+              } @else {
+                <span class="piece empty" aria-label="Vacío"></span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
   </div>
 </section>
