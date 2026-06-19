@@ -188,7 +188,7 @@ async def pvp_matchmaking_test() -> list[str]:
         move_payload = {"col": 3}
         await current_player.send({"type": "move", "payload": move_payload})
 
-        # other_player recibe el evento move (actualización de tablero)
+        # other_player recibe: move + turn (turn actualiza isMyTurn en frontend)
         msg = await other_player.recv()
         assert_equal(msg["type"], "move", f"{other_name} debe recibir 'move'")
         assert_equal(msg["data"]["col"], 3, "Columna debe ser 3")
@@ -196,13 +196,26 @@ async def pvp_matchmaking_test() -> list[str]:
                      f"Jugador debe ser {current_player_number} ({current_name})")
         print(f"[CHECK] Move de {current_name} llegó a {other_name} OK", flush=True)
 
-        # ── current_player recibe el move (broadcast a todos) ──
+        msg = await other_player.recv()
+        assert_equal(msg["type"], "turn", f"{other_name} debe recibir 'turn' después del move")
+        assert_equal(msg["data"]["is_current"], True,
+                     f"{other_name} debe tener el turno ahora")
+        next_player_number = msg["data"]["player_number"]
+        print(f"[CHECK] Turno pasado a {other_name} (player {next_player_number})", flush=True)
+
+        # ── current_player recibe: move + turn ──
         msg = await current_player.recv()
         assert_equal(msg["type"], "move", f"{current_name} debe recibir 'move' (broadcast)")
         assert_equal(msg["data"]["col"], 3, "Columna debe ser 3")
         print(f"[CHECK] Move broadcast llegó a {current_name} OK", flush=True)
 
-        # ── other_player envía chat, current_player debe recibirlo ──
+        msg = await current_player.recv()
+        assert_equal(msg["type"], "turn", f"{current_name} debe recibir 'turn' después del move")
+        assert_equal(msg["data"]["is_current"], False,
+                     f"{current_name} ya no debe tener el turno")
+        print(f"[CHECK] {current_name} perdió el turno correctamente", flush=True)
+
+        # ── other_player (ahora con turno) envía chat, current_player debe recibirlo ──
         chat_payload = {"text": "hola rival"}
         await other_player.send({"type": "chat", "payload": chat_payload})
 

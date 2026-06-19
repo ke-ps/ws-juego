@@ -344,7 +344,6 @@ class SessionManager:
         next_player = session.game.current_player
 
         # Enviar evento move a AMBOS jugadores (para actualizar sus tableros)
-        # El next_player indica de quién es el turno
         await self.broadcast_to_session(
             session.id,
             {
@@ -356,6 +355,26 @@ class SessionManager:
                 },
             },
         )
+
+        # Enviar turno a cada jugador individualmente
+        # El frontend solo actualiza isMyTurn con mensajes type "turn"
+        is_r_turn = (next_player == 'R')
+        await self._notify_player(session.player1, {
+            "type": "turn",
+            "data": {
+                "player": session.player1,
+                "is_current": is_r_turn,
+                "player_number": "R",
+            },
+        })
+        await self._notify_player(session.player2, {
+            "type": "turn",
+            "data": {
+                "player": session.player2,
+                "is_current": not is_r_turn,
+                "player_number": "Y",
+            },
+        })
 
         return move_result
 
