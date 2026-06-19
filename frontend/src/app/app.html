@@ -1,3 +1,16 @@
+@if (errorMessage(); as msg) {
+  <div class="notification error" role="alert">
+    <span>{{ msg }}</span>
+    <button class="dismiss-btn" (click)="onDismissError()">&times;</button>
+  </div>
+}
+
+@if (opponentDisconnected()) {
+  <div class="notification warning" role="alert">
+    El oponente se ha desconectado
+  </div>
+}
+
 @if (status() === 'in_game') {
   <app-board [board]="board()" [disabled]="!isMyTurn()" [winner]="winner()" (columnSelected)="onColumnSelected($event)" (restart)="onRestart()" />
 } @else {

@@ -38,9 +38,16 @@ export class App {
   protected readonly board = signal<string[][]>(emptyBoard());
   protected readonly isMyTurn = signal(false);
   protected readonly winner = signal<'R' | 'Y' | null | undefined>(undefined);
+  protected readonly errorMessage = signal<string | null>(null);
+  protected readonly opponentDisconnected = signal(false);
+  protected readonly socketConnected = signal(false);
 
   protected onColumnSelected(col: number): void {
     this.ws.send({ type: 'move', payload: { col } });
+  }
+
+  protected onDismissError(): void {
+    this.errorMessage.set(null);
   }
 
   protected onRestart(): void {
@@ -52,6 +59,8 @@ export class App {
     this.board.set(emptyBoard());
     this.isMyTurn.set(false);
     this.winner.set(undefined);
+    this.errorMessage.set(null);
+    this.opponentDisconnected.set(false);
     this.ws.connect();
   }
 
@@ -65,6 +74,16 @@ export class App {
       .pipe(takeUntilDestroyed())
       .subscribe((msg: ServerMessage) => {
         this.handleMessage(msg);
+      });
+
+    this.ws
+      .connectionStatus()
+      .pipe(takeUntilDestroyed())
+      .subscribe((connected) => {
+        this.socketConnected.set(connected);
+        if (!connected && this.status() !== 'connecting') {
+          this.errorMessage.set('Conexión perdida con el servidor');
+        }
       });
   }
 
@@ -100,6 +119,14 @@ export class App {
         this.board.set(msg.data.board);
         this.isMyTurn.set(false);
         this.winner.set(msg.data.winner);
+        break;
+
+      case 'error':
+        this.errorMessage.set(msg.data.message);
+        break;
+
+      case 'opponent_disconnected':
+        this.opponentDisconnected.set(true);
         break;
     }
   }

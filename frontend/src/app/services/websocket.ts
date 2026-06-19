@@ -10,6 +10,7 @@ export class WebsocketService {
   private socket: WebSocket | null = null;
 
   private readonly messages$ = new Subject<ServerMessage>();
+  private readonly connectionStatus$ = new Subject<boolean>();
 
   connect(): void {
     if (this.socket) return;
@@ -20,6 +21,7 @@ export class WebsocketService {
 
     this.socket.onopen = () => {
       console.log('[WS] ✅ Conectado');
+      this.connectionStatus$.next(true);
     };
 
     this.socket.onmessage = (event) => {
@@ -37,10 +39,12 @@ export class WebsocketService {
         `[WS] 🔌 Desconectado (code: ${event.code}, reason: ${event.reason || 'none'})`
       );
       this.socket = null;
+      this.connectionStatus$.next(false);
     };
 
     this.socket.onerror = () => {
       console.error('[WS] ❌ Error WebSocket');
+      this.connectionStatus$.next(false);
     };
   }
 
@@ -53,6 +57,10 @@ export class WebsocketService {
 
   messages(): Observable<ServerMessage> {
     return this.messages$.asObservable(); // 👈 FIX
+  }
+
+  connectionStatus(): Observable<boolean> {
+    return this.connectionStatus$.asObservable();
   }
 
   disconnect(): void {
