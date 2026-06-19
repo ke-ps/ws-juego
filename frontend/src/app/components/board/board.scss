@@ -56,3 +56,26 @@
 .piece.empty {
   background: #1a1a2e;
 }
+
+.grid.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.turn-indicator {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.turn-text {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.turn-text.mine {
+  color: #4ade80;
+}
+
+.turn-text.opponent {
+  color: #f87171;
+}

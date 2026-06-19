@@ -36,6 +36,7 @@ export class App {
   protected readonly sessionId = signal<string | null>(null);
   protected readonly waitingMessage = signal<string | null>(null);
   protected readonly board = signal<string[][]>(emptyBoard());
+  protected readonly isMyTurn = signal(false);
 
   protected onColumnSelected(col: number): void {
     this.ws.send({ type: 'move', payload: { col } });
@@ -78,8 +79,13 @@ export class App {
         this.board.set(msg.data.board);
         break;
 
+      case 'turn':
+        this.isMyTurn.set(msg.data.is_current);
+        break;
+
       case 'game_over':
         this.board.set(msg.data.board);
+        this.isMyTurn.set(false);
         break;
     }
   }
