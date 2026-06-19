@@ -1,0 +1,57 @@
+# Render Blueprint — Conecta 4
+# Servicios separados para frontend (Static Site) y backend (Web Service).
+#
+# ⚠️  Requisitos antes del deploy:
+#   1. Frontend: la WS_URL está hardcodeada en el compilado.
+#      Editar frontend/src/app/services/websocket.ts para leer de
+#      window.location o variable de entorno, y recompilar.
+#   2. Backend: CORS actualmente acepta solo localhost.
+#      Se inyecta CORS_ORIGINS via env var; si no se define,
+#      usa los valores por defecto (localhost).
+
+services:
+  # ── Backend: FastAPI + WebSockets ────────────────────────────
+  - type: web
+    name: connect4-backend
+    env: python
+    region: ohio
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.0
+      - key: CORS_ORIGINS
+        value: https://connect4-frontend.onrender.com
+        comment: >
+          Lista separada por comas de orígenes permitidos para CORS.
+          Debe incluir la URL del frontend en producción.
+      - key: DEBUG
+        value: "false"
+
+  # ── Frontend: Angular SPA (Static Site) ──────────────────────
+  - type: web
+    name: connect4-frontend
+    env: static
+    region: ohio
+    plan: free
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist/frontend/browser
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: WS_URL
+        value: wss://connect4-backend.onrender.com/ws/pvp
+        comment: >
+          URL del WebSocket del backend en producción.
+          El frontend debe leer esta variable en tiempo de build.
