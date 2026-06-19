@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-board',
@@ -10,4 +10,9 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 })
 export class Board {
   readonly board = input<string[][]>([]);
+  readonly columnSelected = output<number>();
+
+  protected selectColumn(col: number): void {
+    this.columnSelected.emit(col);
+  }
 }

@@ -37,6 +37,10 @@ export class App {
   protected readonly waitingMessage = signal<string | null>(null);
   protected readonly board = signal<string[][]>(emptyBoard());
 
+  protected onColumnSelected(col: number): void {
+    this.ws.send({ type: 'move', payload: { col } });
+  }
+
   constructor() {
     this.ws.connect();
 
