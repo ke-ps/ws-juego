@@ -112,6 +112,9 @@ export class App {
         if (msg.data['board']) {
           this.board.set(msg.data['board'] as string[][]);
         }
+        if (this.mode() === 'pve') {
+          this.isMyTurn.set(true);
+        }
         break;
 
       case 'move':
