@@ -12,7 +12,15 @@ class GameMode(str, Enum):
     """Modos de juego disponibles."""
 
     PVP = "pvp"  # Dos jugadores humanos
-    PVE = "pve"  # Jugador humano vs IA (IA se añade después)
+    PVE = "pve"  # Jugador humano vs IA
+
+
+class Difficulty(str, Enum):
+    """Niveles de dificultad para la IA."""
+
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
 
 
 class Session(BaseModel):
@@ -25,6 +33,7 @@ class Session(BaseModel):
     full: bool = False  # True cuando ambos jugadores están conectados (PvP) o jugador listo (PvE)
     game: Any | None = None  # Instancia del motor de juego (Connect4Game)
     is_over: bool = False  # True cuando la partida ha terminado
+    difficulty: Difficulty = Difficulty.MEDIUM  # Dificultad IA (solo PvE)
 
     def is_pvp(self) -> bool:
         return self.mode == GameMode.PVP

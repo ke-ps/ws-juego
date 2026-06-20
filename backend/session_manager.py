@@ -7,8 +7,8 @@ from uuid import UUID, uuid4
 
 from fastapi import WebSocket
 
-from models import GameMode, Session
-from connect4_game import Connect4Game
+from models import Difficulty, GameMode, Session
+from connect4_game import Connect4Game, get_ai_move
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -97,7 +97,8 @@ class SessionManager:
 
     # ── Matchmaking ──────────────────────────────────────────────────────────
 
-    async def join_or_create(self, websocket: WebSocket, client_id: str, mode: GameMode) -> Session:
+    async def join_or_create(self, websocket: WebSocket, client_id: str, mode: GameMode,
+                              difficulty: Difficulty = Difficulty.MEDIUM) -> Session:
         """
         Lógica de matchmaking:
         - PvP: busca sala esperando, o crea una nueva.
@@ -109,6 +110,7 @@ class SessionManager:
         # Caso PVE: crear sala directamente
         if mode == GameMode.PVE:
             session = self._create_session(mode, client_id)
+            session.difficulty = difficulty
             self.player_rooms[client_id] = session.id
             # Enviar connected antes que game_start
             await self._notify_player(client_id, {
@@ -117,6 +119,7 @@ class SessionManager:
                     "client_id": client_id,
                     "session_id": str(session.id),
                     "mode": "pve",
+                    "difficulty": difficulty.value,
                 },
             })
             # Inicializar el juego
@@ -127,6 +130,7 @@ class SessionManager:
                 "data": {
                     "session_id": str(session.id),
                     "mode": "pve",
+                    "difficulty": difficulty.value,
                     "players": {"player1": client_id, "player2": None},
                     "board": session.game.board,
                     "current_player": "R",
@@ -484,14 +488,8 @@ class SessionManager:
             )
             return move_result
 
-        # Turno de la IA (simple: columna aleatoria válida)
-        import random
-
-        valid_cols = [c for c in range(7) if session.game.board[0][c] == ' ']
-        if not valid_cols:
-            return move_result
-
-        ai_col = random.choice(valid_cols)
+        # Turno de la IA (Minimax con poda Alpha-Beta)
+        ai_col = get_ai_move(session.game.board, session.difficulty.value)
         ai_row = None
         for r in range(session.game.rows - 1, -1, -1):
             if session.game.board[r][ai_col] == ' ':

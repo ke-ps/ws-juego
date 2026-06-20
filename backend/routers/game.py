@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Path, WebSocket, WebSocketDisconnect
 
-from models import GameMode
+from models import Difficulty, GameMode
 from session_manager import session_manager, MoveError
 
 import logging
@@ -24,6 +24,7 @@ router = APIRouter(tags=["game"])
 async def websocket_endpoint(
     websocket: WebSocket,
     mode: str = Path(..., description="Modo de juego: 'pvp' o 'pve'"),
+    difficulty: str = "medium",
 ):
     """
     Endpoint WebSocket para unirse a una partida.
@@ -39,10 +40,18 @@ async def websocket_endpoint(
     Args:
         websocket: Conexión WebSocket del cliente.
         mode: Modo de juego ('pvp' o 'pve').
+        difficulty: Dificultad de la IA ('easy', 'medium', 'hard') solo para PvE.
     """
     # Validar modo
     if mode not in ("pvp", "pve"):
         await websocket.close(code=4000, reason="Modo inválido. Usa 'pvp' o 'pve'.")
+        return
+
+    # Validar dificultad (solo para PvE, ignorada en PvP)
+    try:
+        difficulty_enum = Difficulty(difficulty)
+    except ValueError:
+        await websocket.close(code=4000, reason=f"Dificultad inválida: {difficulty}. Usa 'easy', 'medium' o 'hard'.")
         return
 
     game_mode = GameMode(mode)
@@ -52,7 +61,7 @@ async def websocket_endpoint(
     # Conectar y hacer matchmaking
     await session_manager.connect(websocket, client_id)
     print(f"[WS] Cliente {client_id} conectado")
-    session = await session_manager.join_or_create(websocket, client_id, game_mode)
+    session = await session_manager.join_or_create(websocket, client_id, game_mode, difficulty_enum)
     print(f"[WS] Cliente {client_id} joined session {session.id}")
 
     # Bucle de mensajes
