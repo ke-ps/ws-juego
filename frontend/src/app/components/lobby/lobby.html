@@ -1,10 +1,75 @@
 <section class="lobby" aria-label="Lobby">
   <h1>Conecta 4</h1>
 
+  @if (status() === 'connecting') {
+    <div class="mode-selector">
+      <label class="mode-label">Modo de juego</label>
+      <div class="toggle-group" role="radiogroup" aria-label="Modo de juego">
+        <button
+          class="toggle-btn"
+          [class.active]="selectedMode() === 'pvp'"
+          (click)="onModeChange('pvp')"
+          role="radio"
+          [attr.aria-checked]="selectedMode() === 'pvp'"
+        >
+          PvP
+        </button>
+        <button
+          class="toggle-btn"
+          [class.active]="selectedMode() === 'pve'"
+          (click)="onModeChange('pve')"
+          role="radio"
+          [attr.aria-checked]="selectedMode() === 'pve'"
+        >
+          PvE
+        </button>
+      </div>
+    </div>
+
+    @if (selectedMode() === 'pve') {
+      <div class="difficulty-selector">
+        <label class="mode-label">Dificultad</label>
+        <div class="toggle-group" role="radiogroup" aria-label="Dificultad">
+          <button
+            class="toggle-btn"
+            [class.active]="selectedDifficulty() === 'easy'"
+            (click)="onDifficultyChange('easy')"
+            role="radio"
+            [attr.aria-checked]="selectedDifficulty() === 'easy'"
+          >
+            Fácil
+          </button>
+          <button
+            class="toggle-btn"
+            [class.active]="selectedDifficulty() === 'medium'"
+            (click)="onDifficultyChange('medium')"
+            role="radio"
+            [attr.aria-checked]="selectedDifficulty() === 'medium'"
+          >
+            Medio
+          </button>
+          <button
+            class="toggle-btn"
+            [class.active]="selectedDifficulty() === 'hard'"
+            (click)="onDifficultyChange('hard')"
+            role="radio"
+            [attr.aria-checked]="selectedDifficulty() === 'hard'"
+          >
+            Difícil
+          </button>
+        </div>
+      </div>
+    }
+
+    <button class="start-btn" (click)="onStart()">
+      {{ selectedMode() === 'pvp' ? 'Buscar partida' : 'Jugar contra IA' }}
+    </button>
+  }
+
   <div class="status-bar" aria-label="Estado de la conexión" aria-live="polite">
     <span class="status-badge" [attr.data-status]="status()">
       @switch (status()) {
-        @case ('connecting') { Conectando... }
+        @case ('connecting') { Seleccionando modo... }
         @case ('connected') { Conectado }
         @case ('waiting') { En espera }
         @default { En espera }
@@ -26,7 +91,7 @@
     </p>
   }
 
-  @if (status() !== 'connecting') {
+  @if (status() === 'waiting') {
     <p class="searching">Buscando rival...</p>
   }
 

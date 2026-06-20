@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { Difficulty } from '../../core/websocket.types';
 
 @Component({
   selector: 'app-lobby',
@@ -13,4 +14,24 @@ export class Lobby {
   readonly clientId = input<string | null>(null);
   readonly sessionId = input<string | null>(null);
   readonly waitingMessage = input<string | null>(null);
+
+  readonly startGame = output<{ mode: 'pvp' | 'pve'; difficulty: Difficulty }>();
+
+  protected readonly selectedMode = signal<'pvp' | 'pve'>('pvp');
+  protected readonly selectedDifficulty = signal<Difficulty>('medium');
+
+  protected onModeChange(mode: 'pvp' | 'pve'): void {
+    this.selectedMode.set(mode);
+  }
+
+  protected onDifficultyChange(difficulty: Difficulty): void {
+    this.selectedDifficulty.set(difficulty);
+  }
+
+  protected onStart(): void {
+    this.startGame.emit({
+      mode: this.selectedMode(),
+      difficulty: this.selectedDifficulty(),
+    });
+  }
 }

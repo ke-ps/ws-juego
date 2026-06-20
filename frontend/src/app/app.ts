@@ -8,7 +8,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { WebsocketService } from './services/websocket';
-import { ServerMessage } from './core/websocket.types';
+import { Difficulty, ServerMessage } from './core/websocket.types';
 import { Lobby } from './components/lobby/lobby';
 import { Board } from './components/board/board';
 
@@ -41,9 +41,19 @@ export class App {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly opponentDisconnected = signal(false);
   protected readonly socketConnected = signal(false);
+  protected readonly mode = signal<'pvp' | 'pve'>('pvp');
+
+  protected onStartGame(params: { mode: 'pvp' | 'pve'; difficulty: Difficulty }): void {
+    this.mode.set(params.mode);
+    this.status.set('connecting');
+    this.ws.connect(params.mode, params.difficulty);
+  }
 
   protected onColumnSelected(col: number): void {
     this.ws.send({ type: 'move', payload: { col } });
+    if (this.mode() === 'pve') {
+      this.isMyTurn.set(false);
+    }
   }
 
   protected onDismissError(): void {
@@ -61,12 +71,9 @@ export class App {
     this.winner.set(undefined);
     this.errorMessage.set(null);
     this.opponentDisconnected.set(false);
-    this.ws.connect();
   }
 
   constructor() {
-    this.ws.connect();
-
     this.destroyRef.onDestroy(() => this.ws.disconnect());
 
     this.ws
@@ -109,6 +116,11 @@ export class App {
 
       case 'move':
         this.board.set(msg.data.board);
+        break;
+
+      case 'opponent_move':
+        this.board.set(msg.data.board);
+        this.isMyTurn.set(true);
         break;
 
       case 'turn':
