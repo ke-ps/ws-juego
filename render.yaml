@@ -24,7 +24,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.14.0
       - key: CORS_ORIGINS
-        value: https://connect4-frontend-e17h.onrender.com
+        value: https://retroplay-frontend.onrender.com
         comment: >
           Lista separada por comas de orígenes permitidos para CORS.
           Debe incluir la URL del frontend en producción.
@@ -50,7 +50,7 @@ services:
         destination: /index.html
     envVars:
       - key: WS_URL
-        value: wss://connect4-backend-3dks.onrender.com/ws/pvp
+        value: wss://retroplay-backend.onrender.com/ws/pvp
         comment: >
           URL del WebSocket del backend en producción.
           Actualmente está hardcodeada en frontend/src/environments/environment.prod.ts.
