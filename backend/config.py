@@ -1,6 +1,8 @@
 """
 Configuración del backend Conecta 4.
 """
+from typing import Union
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
@@ -14,16 +16,15 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # CORS — acepta JSON array o string separado por commas via env var
-    cors_origins: list[str] = [
+    cors_origins: Union[str, list[str]] = [
         "http://localhost:4200",
         "http://127.0.0.1:4200",
     ]
 
     @field_validator("cors_origins", mode="before")
     @classmethod
-    def parse_cors(cls, v: str | list[str]) -> list[str]:
+    def parse_cors(cls, v):
         if isinstance(v, str):
-            # Soporta JSON array o comma-separated
             v = v.strip()
             if v.startswith("["):
                 import json
