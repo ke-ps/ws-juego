@@ -13,7 +13,7 @@
 services:
   # ── Backend: FastAPI + WebSockets ────────────────────────────
   - type: web
-    name: connect4-backend
+    name: retroplay-backend
     env: python
     region: ohio
     plan: free
@@ -33,7 +33,7 @@ services:
 
   # ── Frontend: Angular SPA (Static Site) ──────────────────────
   - type: web
-    name: connect4-frontend
+    name: retroplay-frontend
     env: static
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: frontend/dist/frontend/browser
