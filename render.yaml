@@ -1,10 +1,11 @@
 # Render Blueprint — Conecta 4
 # Servicios separados para frontend (Static Site) y backend (Web Service).
 #
-# ⚠️  Requisitos antes del deploy:
-#   1. Frontend: la WS_URL está hardcodeada en el compilado.
-#      Editar frontend/src/app/services/websocket.ts para leer de
-#      window.location o variable de entorno, y recompilar.
+# ⚠️  Notas:
+#   1. Frontend: la WS_URL se define en frontend/src/environments/.
+#      environment.ts -> dev (localhost)
+#      environment.prod.ts -> produccion (se reemplaza via fileReplacements en el build)
+#      Si cambia la URL del backend, actualizar environment.prod.ts y redeployar.
 #   2. Backend: CORS actualmente acepta solo localhost.
 #      Se inyecta CORS_ORIGINS via env var; si no se define,
 #      usa los valores por defecto (localhost).
@@ -52,4 +53,5 @@ services:
         value: wss://connect4-backend.onrender.com/ws/pvp
         comment: >
           URL del WebSocket del backend en producción.
-          El frontend debe leer esta variable en tiempo de build.
+          Actualmente está hardcodeada en frontend/src/environments/environment.prod.ts.
+          Si cambia, actualizar ese archivo y redeployar.

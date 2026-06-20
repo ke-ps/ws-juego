@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { ClientMessage, ServerMessage } from '../core/websocket.types';
+import { WS_URL as ENV_WS_URL } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class WebsocketService {
-  private readonly WS_URL = 'ws://localhost:8000/ws/pvp';
+  private readonly WS_URL = ENV_WS_URL;
   private socket: WebSocket | null = null;
 
   private readonly messages$ = new Subject<ServerMessage>();
