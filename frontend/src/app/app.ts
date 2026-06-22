@@ -137,6 +137,12 @@ export class App {
         break;
 
       case 'invalid_move':
+        this.errorMessage.set(msg.data.message);
+        if (this.mode() === 'pve') {
+          this.isMyTurn.set(true);
+        }
+        break;
+
       case 'error':
         this.errorMessage.set(msg.data.message);
         break;
