@@ -189,9 +189,9 @@ def minimax(board: list[list[str]], depth: int, alpha: float, beta: float,
 
 
 DEPTH_MAP = {
-    "easy": 2,
-    "medium": 4,
-    "hard": 6,
+    "easy": 1,
+    "medium": 2,
+    "hard": 4,
 }
 
 
