@@ -60,7 +60,7 @@ export class App {
     this.errorMessage.set(null);
   }
 
-  protected onRestart(): void {
+  protected onBack(): void {
     this.ws.disconnect();
     this.status.set('connecting');
     this.clientId.set(null);
@@ -71,6 +71,10 @@ export class App {
     this.winner.set(undefined);
     this.errorMessage.set(null);
     this.opponentDisconnected.set(false);
+  }
+
+  protected onRestart(): void {
+    this.onBack();
   }
 
   constructor() {

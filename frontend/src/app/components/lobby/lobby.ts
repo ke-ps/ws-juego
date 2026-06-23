@@ -16,6 +16,7 @@ export class Lobby {
   readonly waitingMessage = input<string | null>(null);
 
   readonly startGame = output<{ mode: 'pvp' | 'pve'; difficulty: Difficulty }>();
+  readonly back = output<void>();
 
   protected readonly selectedMode = signal<'pvp' | 'pve'>('pvp');
   protected readonly selectedDifficulty = signal<Difficulty>('medium');
@@ -33,5 +34,9 @@ export class Lobby {
       mode: this.selectedMode(),
       difficulty: this.selectedDifficulty(),
     });
+  }
+
+  protected onBack(): void {
+    this.back.emit();
   }
 }

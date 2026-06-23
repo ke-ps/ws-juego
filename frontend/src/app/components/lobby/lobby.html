@@ -67,35 +67,25 @@
   }
 
   <div class="status-bar" aria-label="Estado de la conexión" aria-live="polite">
-    <span class="status-badge" [attr.data-status]="status()">
-      @switch (status()) {
-        @case ('connecting') { Seleccionando modo... }
-        @case ('connected') { Conectado }
-        @case ('waiting') { En espera }
-        @default { En espera }
-      }
-    </span>
+    @if (status() === 'waiting') {
+      <p class="searching">Buscando rival...</p>
+      <button class="back-btn" (click)="onBack()">Volver</button>
+    }
   </div>
 
-  @if (clientId(); as id) {
-    <p class="info-line">
-      <span class="label">client_id:</span>
-      <code>{{ id }}</code>
-    </p>
-  }
+  @if (status() !== 'waiting') {
+    @if (clientId(); as id) {
+      <p class="info-line">
+        <span class="label">client_id:</span>
+        <code>{{ id }}</code>
+      </p>
+    }
 
-  @if (sessionId(); as id) {
-    <p class="info-line">
-      <span class="label">session_id:</span>
-      <code>{{ id }}</code>
-    </p>
-  }
-
-  @if (status() === 'waiting') {
-    <p class="searching">Buscando rival...</p>
-  }
-
-  @if (waitingMessage(); as msg) {
-    <p class="waiting-message">{{ msg }}</p>
+    @if (sessionId(); as id) {
+      <p class="info-line">
+        <span class="label">session_id:</span>
+        <code>{{ id }}</code>
+      </p>
+    }
   }
 </section>
